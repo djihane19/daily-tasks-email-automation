@@ -1,0 +1,104 @@
+{
+  "name": "Daily Tasks Email Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": "{{ $env.GOOGLE_SHEET_ID }}",
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "name": "Get Tasks from Google Sheets"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tasks = $input.all()\n  .map(i => i.json.tasks)\n  .filter(Boolean);\n\nreturn [\n  {\n    json: {\n      tasksText: tasks.map(task => `• ${task}`).join(\"\\n\"),\n      tasks: tasks\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "name": "Format Tasks"
+    },
+    {
+      "parameters": {
+        "sendTo": "{{ $env.RECIPIENT_EMAIL }}",
+        "subject": "Your Daily Tasks",
+        "emailType": "text",
+        "message": "Here are your tasks:\n\n{{ $json.tasksText }}\n\nDo Your Best\nUr Future Version",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "name": "Send Daily Email"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Tasks from Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tasks from Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Format Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Tasks": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["automation", "email", "tasks", "google-sheets"]
+}
